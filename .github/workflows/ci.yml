@@ -58,29 +58,31 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace packageMagiskZip
 
+      # upload-artifact always wraps files in {name}.zip. Upload the unzipped
+      # module tree so the downloaded artifact *is* the Magisk zip (files at root).
       - name: Pack outputs
         run: |
           set -euo pipefail
           mkdir -p dist/module
           unzip -q out/genshin-fps-unlock-zygisk.zip -d dist/module
-          rm -f dist/module/app.apk
-          (cd dist/module && zip -qr ../genshin-fps-unlock-zygisk.zip .)
-          rm -rf dist/module
           cp app/build/outputs/apk/release/app-release.apk dist/genshin-fps-unlock.apk
-          ls -l dist/genshin-fps-unlock.apk dist/genshin-fps-unlock-zygisk.zip
+          test -f dist/module/module.prop
+          test -f dist/module/zygisk/arm64-v8a.so
+          test -f dist/genshin-fps-unlock.apk
+          find dist/module -type f | sort
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: apk
+          name: genshin-fps-unlock-apk
           path: dist/genshin-fps-unlock.apk
           if-no-files-found: error
 
       - name: Upload Magisk module
         uses: actions/upload-artifact@v4
         with:
-          name: magisk-module
-          path: dist/genshin-fps-unlock-zygisk.zip
+          name: genshin-fps-unlock-zygisk
+          path: dist/module/**
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -89,5 +91,5 @@ jobs:
         with:
           files: |
             dist/genshin-fps-unlock.apk
-            dist/genshin-fps-unlock-zygisk.zip
+            out/genshin-fps-unlock-zygisk.zip
           generate_release_notes: true
