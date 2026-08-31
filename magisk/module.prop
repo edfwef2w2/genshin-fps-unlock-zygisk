@@ -1,0 +1,6 @@
+id=genshin_fps_unlock
+name=Genshin FPS Unlock Zygisk
+version=v4.0.0
+versionCode=4000
+author=edfwef2w2
+description=Android Zygisk port of 34736384/genshin-fps-unlock. Requires ZygiskNext/ReZygisk/NeoZygisk.

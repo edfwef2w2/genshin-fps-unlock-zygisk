@@ -1,0 +1,10 @@
+{
+  "fps": 120,
+  "powerSave": false,
+  "delaySeconds": 8,
+  "packages": [
+    "com.miHoYo.Yuanshen",
+    "com.miHoYo.GenshinImpact",
+    "com.miHoYo.ys"
+  ]
+}
