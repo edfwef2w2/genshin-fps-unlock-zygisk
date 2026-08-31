@@ -1,5 +1,7 @@
 # Genshin FPS Unlock Zygisk
 
+[![CI](https://github.com/edfwef2w2/genshin-fps-unlock-zygisk/actions/workflows/ci.yml/badge.svg)](https://github.com/edfwef2w2/genshin-fps-unlock-zygisk/actions/workflows/ci.yml)
+
 Unlock the in-game FPS cap on official Android clients (CN / Global / Bilibili).
 
 This is a **Zygisk module** plus a companion app. It injects into the game process, locates the frame-rate value (IL2CPP pattern, with a Unity `set_targetFrameRate` fallback), and writes the target FPS in a loop.
@@ -73,6 +75,8 @@ Outputs:
 
 Set `sdk.dir` in `local.properties`, or open the project in Android Studio and let it generate that file.
 
+Pushing to `main` or opening a pull request runs GitHub Actions, which builds the Magisk zip and uploads it as a workflow artifact. Tag `v*` (for example `v4.0.0`) to publish a GitHub Release.
+
 ## Notes
 
 - HoYoverse is aware of FPS unlock on PC; using **only** FPS unlock is widely reported as safe there. Android root/Zygisk detection is a different problem and may block launch.
@@ -122,6 +126,8 @@ gradlew.bat :app:assembleRelease :zygisk:assembleRelease packageMagiskZip
 ```
 
 产物在 `app/build/outputs/apk/release/` 和 `out/genshin-fps-unlock-zygisk.zip`。
+
+推送到 `main` 或开 PR 会跑 GitHub Actions，产物在 workflow artifact。打 `v*` 标签（例如 `v4.0.0`）会发 GitHub Release。
 
 ## 许可证
 
