@@ -46,9 +46,6 @@ tasks.register("copyZygiskSo") {
         val destDir = rootProject.layout.projectDirectory.dir("magisk/zygisk").asFile
         val dest = destDir.resolve("arm64-v8a.so")
         destDir.mkdirs()
-        if (dest.exists() && dest.length() > 0L) {
-            return@doLast
-        }
         val candidates = listOf(
             layout.buildDirectory.dir(
                 "intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib/arm64-v8a"

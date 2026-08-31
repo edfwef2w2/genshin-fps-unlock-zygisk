@@ -33,33 +33,30 @@ uintptr_t follow_branches(uintptr_t addr, uintptr_t start, uintptr_t end, int ma
     return addr;
 }
 
-int32_t* find_global_from_window(uintptr_t addr, uintptr_t start, uintptr_t end) {
-    // After the call chain, look for ADRP + LDR/STR W that references a writable int32.
-    for (int i = 0; i < 48; i++) {
-        uintptr_t pc = addr + static_cast<uintptr_t>(i) * 4;
-        if (!in_range(pc, start, end) || !in_range(pc + 4, start, end)) {
-            break;
-        }
-        uint32_t a = load_insn(pc);
-        int rd = -1;
-        int64_t page_off = 0;
-        if (!arm64_is_adrp(a, &rd, &page_off)) {
-            continue;
-        }
-        uint32_t b = load_insn(pc + 4);
-        int rt = -1;
-        int rn = -1;
-        uint32_t off = 0;
-        const bool ldr = arm64_is_ldr_w_uoff(b, &rt, &rn, &off);
-        const bool str = !ldr && arm64_is_str_w_uoff(b, &rt, &rn, &off);
-        if ((!ldr && !str) || rn != rd) {
-            continue;
-        }
-        uintptr_t page = (pc & ~static_cast<uintptr_t>(0xFFF)) + static_cast<uintptr_t>(page_off);
-        auto* ptr = reinterpret_cast<int32_t*>(page + off);
-        if (is_address_writable(ptr)) {
-            return ptr;
-        }
+constexpr uint32_t kArm64Ret = 0xD65F03C0u;
+
+int32_t* global_from_w0_store(uintptr_t callee, uintptr_t start, uintptr_t end) {
+    if (!in_range(callee, start, end) || !in_range(callee + 8, start, end)) {
+        return nullptr;
+    }
+    int rd = -1;
+    int64_t page_off = 0;
+    if (!arm64_is_adrp(load_insn(callee), &rd, &page_off)) {
+        return nullptr;
+    }
+    int rt = -1;
+    int rn = -1;
+    uint32_t off = 0;
+    if (!arm64_is_str_w_uoff(load_insn(callee + 4), &rt, &rn, &off) || rt != 0 || rn != rd) {
+        return nullptr;
+    }
+    if (load_insn(callee + 8) != kArm64Ret) {
+        return nullptr;
+    }
+    uintptr_t page = (callee & ~static_cast<uintptr_t>(0xFFF)) + static_cast<uintptr_t>(page_off);
+    auto* ptr = reinterpret_cast<int32_t*>(page + off);
+    if (is_address_writable(ptr)) {
+        return ptr;
     }
     return nullptr;
 }
@@ -74,28 +71,16 @@ std::vector<ScanHit> scan_framerate_candidates(uintptr_t start, uintptr_t end) {
 
     for (uintptr_t pc = start; pc + 8 <= end; pc += 4) {
         uint32_t insn = load_insn(pc);
-        if (!arm64_is_movz_w_imm(insn, 60)) {
+        int rd = -1;
+        if (!arm64_is_movz_w_imm(insn, 60, &rd) || rd != 0) {
             continue;
         }
         uint32_t next = load_insn(pc + 4);
         if (!arm64_is_bl(next)) {
             continue;
         }
-
-        uintptr_t call_target = arm64_branch_target(next, pc + 4);
-        if (!in_range(call_target, start, end)) {
-            continue;
-        }
-        // Windows filter: call destination starts with a JMP. ARM64 analogue: B.
-        if (!arm64_is_b(load_insn(call_target))) {
-            continue;
-        }
-
-        uintptr_t resolved = follow_branches(pc + 4, start, end, 16);
-        if (resolved == 0) {
-            continue;
-        }
-        int32_t* fps = find_global_from_window(resolved, start, end);
+        uintptr_t callee = follow_branches(pc + 4, start, end, 8);
+        int32_t* fps = global_from_w0_store(callee, start, end);
         if (fps == nullptr) {
             continue;
         }
