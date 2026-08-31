@@ -58,13 +58,29 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace packageMagiskZip
 
-      - name: Upload artifacts
+      - name: Pack outputs
+        run: |
+          set -euo pipefail
+          mkdir -p dist/module
+          unzip -q out/genshin-fps-unlock-zygisk.zip -d dist/module
+          rm -f dist/module/app.apk
+          (cd dist/module && zip -qr ../genshin-fps-unlock-zygisk.zip .)
+          rm -rf dist/module
+          cp app/build/outputs/apk/release/app-release.apk dist/genshin-fps-unlock.apk
+          ls -l dist/genshin-fps-unlock.apk dist/genshin-fps-unlock-zygisk.zip
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: genshin-fps-unlock-zygisk
-          path: |
-            out/genshin-fps-unlock-zygisk.zip
-            app/build/outputs/apk/release/app-release.apk
+          name: apk
+          path: dist/genshin-fps-unlock.apk
+          if-no-files-found: error
+
+      - name: Upload Magisk module
+        uses: actions/upload-artifact@v4
+        with:
+          name: magisk-module
+          path: dist/genshin-fps-unlock-zygisk.zip
           if-no-files-found: error
 
       - name: Create GitHub Release
@@ -72,6 +88,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            out/genshin-fps-unlock-zygisk.zip
-            app/build/outputs/apk/release/app-release.apk
+            dist/genshin-fps-unlock.apk
+            dist/genshin-fps-unlock-zygisk.zip
           generate_release_notes: true
