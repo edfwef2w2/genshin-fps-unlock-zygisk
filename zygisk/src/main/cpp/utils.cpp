@@ -33,9 +33,9 @@ std::vector<MemRange> parse_maps() {
     while (fgets(line, sizeof(line), f)) {
         uintptr_t start = 0;
         uintptr_t end = 0;
-        uintptr_t file_off = 0;
         char perms[8]{};
         char path[256]{};
+        uintptr_t file_off = 0;
         int n = sscanf(
             line,
             "%lx-%lx %7s %lx %*s %*s %255[^\n]",
@@ -110,10 +110,9 @@ const char* find_first_library_exec(
 bool find_elf_exec_section(
     const char* lib_name,
     const char* section,
-    uintptr_t* start,
-    uintptr_t* end
+    ElfExecSection* out
 ) {
-    if (lib_name == nullptr || section == nullptr || start == nullptr || end == nullptr) {
+    if (lib_name == nullptr || section == nullptr || out == nullptr) {
         return false;
     }
     std::string path;
@@ -184,14 +183,18 @@ bool find_elf_exec_section(
         if (strcmp(strtab.data() + name_off, section) != 0) {
             continue;
         }
-        uint64_t addr = 0, size = 0;
+        uint64_t addr = 0, size = 0, off = 0;
         memcpy(&addr, ent + 16, 8);
+        memcpy(&off, ent + 24, 8);
         memcpy(&size, ent + 32, 8);
         if (size < 8) {
             return false;
         }
-        *start = bias + static_cast<uintptr_t>(addr);
-        *end = *start + static_cast<uintptr_t>(size);
+        out->path = std::move(path);
+        out->bias = bias;
+        out->vaddr = static_cast<uintptr_t>(addr);
+        out->file_off = static_cast<uintptr_t>(off);
+        out->size = static_cast<uintptr_t>(size);
         return true;
     }
     return false;

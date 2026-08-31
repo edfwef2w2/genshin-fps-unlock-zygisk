@@ -24,11 +24,18 @@ const char* find_first_library_exec(
     uintptr_t* start,
     uintptr_t* end
 );
+struct ElfExecSection {
+    std::string path;
+    uintptr_t bias = 0;
+    uintptr_t vaddr = 0;
+    uintptr_t file_off = 0;
+    uintptr_t size = 0;
+};
+
 bool find_elf_exec_section(
     const char* lib_name,
     const char* section,
-    uintptr_t* start,
-    uintptr_t* end
+    ElfExecSection* out
 );
 bool is_address_writable(const void* ptr);
 void sleep_ms(int ms);

@@ -9,4 +9,10 @@ struct ScanHit {
 };
 
 std::vector<ScanHit> scan_framerate_candidates(uintptr_t start, uintptr_t end);
-int32_t* pick_writable_framerate(const std::vector<ScanHit>& hits);
+std::vector<ScanHit> scan_framerate_file(
+    const char* path,
+    uintptr_t file_off,
+    uintptr_t vaddr,
+    uintptr_t size,
+    uintptr_t bias
+);
